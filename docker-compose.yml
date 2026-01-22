@@ -1,0 +1,68 @@
+services:
+  # --- 1. PostgreSQL Database Service ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: shop_postgres
+    # Restart policy: Auto-restart unless explicitly stopped by user
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Security: Bind port to 127.0.0.1 only to prevent external network access.
+    # For strict production, consider commenting out ports and using internal Docker network only.
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Performance: Increase shared memory size (default 64MB is often too low for Postgres)
+    shm_size: 256mb
+    # Healthcheck: Ensure the database is fully ready to accept connections
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Logging: Log rotation to prevent disk space exhaustion
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - shop_network
+
+  # --- 2. pgAdmin 4 (Database Management Interface) ---
+  # Caution: In a strict production environment, avoid exposing pgAdmin publicly.
+  # Best practice: Access via VPN or SSH Tunnel, or run only when maintenance is required.
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: shop_pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+      # Security: Enhance cookie protection
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: 'True'
+      PGADMIN_CONFIG_CONSOLE_LOG_LEVEL: '10'
+    ports:
+      - "${PGADMIN_PORT}:80"
+    depends_on:
+      postgres:
+        condition: service_healthy # Wait for Postgres to be healthy before starting
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - shop_network
+
+# --- Volumes & Networks Definitions ---
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  shop_network:
+    driver: bridge
