@@ -8,7 +8,7 @@ package com.badmintonshop.entity.enums;
  */
 public enum RoleName {
     ADMIN
-    , STAFF
     , MANAGER
+    , STAFF
     , WAREHOUSE
 }

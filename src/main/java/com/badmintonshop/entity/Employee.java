@@ -1,6 +1,12 @@
 package com.badmintonshop.entity;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -14,7 +20,7 @@ import lombok.Data;
 @Entity
 @Table(name = "employees")
 @Data
-public class Employee {
+public class Employee implements UserDetails{
     /**
      * The unique identifier for the employee.
      */
@@ -116,5 +122,17 @@ public class Employee {
     @PreUpdate
     protected void onUpdate(){
         updatedAt = LocalDateTime.now();
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        if (role == null) return List.of();
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+    }
+
+    @Override
+    public String getUsername() {
+        // TODO Auto-generated method stub
+        return this.email;
     }
 }
