@@ -9,7 +9,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents an employee within the Badminton Shop system.
@@ -19,6 +22,9 @@ import lombok.Data;
  */
 @Entity
 @Table(name = "employees")
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 @Data
 public class Employee implements UserDetails{
     /**
@@ -63,6 +69,13 @@ public class Employee implements UserDetails{
     @Column(unique = true)
     private String employeeCode;
 
+    /**
+     * The contact phone number of the employee.
+     * <p>
+     * Used for communication purposes.
+     * </p>
+     */
+    private String phoneNumber;
     /**
      * Indicates whether the employee's account is enabled.
      * <p>

@@ -1,4 +1,4 @@
-package com.badmintonshop.payload;
+package com.badmintonshop.payload.response;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;

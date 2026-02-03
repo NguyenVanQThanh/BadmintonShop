@@ -1,4 +1,4 @@
-package com.badmintonshop.payload;
+package com.badmintonshop.payload.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,4 +1,4 @@
-package com.badmintonshop.payload;
+package com.badmintonshop.payload.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

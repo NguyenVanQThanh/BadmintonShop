@@ -1,7 +1,7 @@
 package com.badmintonshop.controller;
 
-import com.badmintonshop.payload.AuthResponse;
-import com.badmintonshop.payload.LoginRequest;
+import com.badmintonshop.payload.request.LoginRequest;
+import com.badmintonshop.payload.response.AuthResponse;
 import com.badmintonshop.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
