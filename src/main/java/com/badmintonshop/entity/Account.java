@@ -8,6 +8,8 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.badmintonshop.entity.enums.RoleName;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -21,12 +23,12 @@ import lombok.NoArgsConstructor;
  * </p>
  */
 @Entity
-@Table(name = "employees")
+@Table(name = "accounts")
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Data
-public class Employee implements UserDetails{
+public class Account implements UserDetails{
     /**
      * The unique identifier for the employee.
      */
@@ -53,30 +55,6 @@ public class Employee implements UserDetails{
     private String password;
 
     /**
-     * The full name of the employee.
-     * <p>
-     * Used for display purposes in the system.
-     * </p>
-     */
-    private String fullName;
-
-    /**
-     * The unique code assigned to the employee.
-     * <p>
-     * Used for internal identification and tracking.
-     * </p>
-     */
-    @Column(unique = true)
-    private String employeeCode;
-
-    /**
-     * The contact phone number of the employee.
-     * <p>
-     * Used for communication purposes.
-     * </p>
-     */
-    private String phoneNumber;
-    /**
      * Indicates whether the employee's account is enabled.
      * <p>
      * If false, the employee cannot log in.
@@ -85,38 +63,14 @@ public class Employee implements UserDetails{
     private boolean enabled = true;
 
     /**
-     * Indicates whether the employee's account is locked.
-     * <p>
-     * If false, the employee cannot log in.
-     * </p>
-     */
-    private boolean accountNonLocked = true;
-
-    /**
-     * Indicates whether the employee's account has expried.
-     * <p>
-     * If false, the employee cannot log in.
-     * </p>
-     */
-    private boolean accountNonExpired = true;
-    
-    /**
-     * Indicates whether the employee's credentials have expired.
-     * <p>
-     * If false, the employee cannot log in.
-     * </p>
-     */
-    private boolean credentialsNonExpired = true;
-
-    /**
      * The role assigned to the employee.
      * <p>
      * Defines the set of permissions the employee has.
      * </p>
      */
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private RoleName role;
 
     /**
      * Timestamps for auditing purposes.
@@ -140,7 +94,27 @@ public class Employee implements UserDetails{
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (role == null) return List.of();
-        return List.of(new SimpleGrantedAuthority("ROLE_" + role.getName()));
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true; 
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return this.enabled;
     }
 
     @Override

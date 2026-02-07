@@ -1,6 +1,6 @@
 package com.badmintonshop.config;
 
-import com.badmintonshop.repository.EmployeeRepository;
+import com.badmintonshop.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -28,7 +28,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @RequiredArgsConstructor
 public class ApplicationConfig {
 
-    private final EmployeeRepository employeeRepository; // Repository của bạn
+    private final AccountRepository accountRepository;
 
     /**
      * Defines the logic to retrieve user details from the database.
@@ -38,7 +38,7 @@ public class ApplicationConfig {
      */
     @Bean
     public UserDetailsService userDetailsService() {
-        return username -> employeeRepository.findByEmail(username)
+        return username -> accountRepository.findByEmail(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + username));
     }
 

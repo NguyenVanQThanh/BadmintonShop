@@ -60,6 +60,8 @@ public class SecurityConfiguration {
             // 3. Authorization Rules: Define which endpoints are public and which are protected.
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to Login/Register
+                .requestMatchers("/api/admin/employees/**").hasRole("ADMIN")
+                .requestMatchers("/api/employee/**").hasAnyRole("ADMIN", "MANAGER", "STAFF", "WAREHOUSE")
                 .anyRequest().authenticated() // Require authentication for all other endpoints
             )
             
@@ -78,7 +80,7 @@ public class SecurityConfiguration {
 
             // 7. Logout Configuration: Define the logout URL and the custom logout handler.
             .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
+                .logoutUrl("/api/employee/auth/logout")
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler((request, response, authentication)-> SecurityContextHolder.clearContext())
             );
@@ -107,10 +109,10 @@ public class SecurityConfiguration {
         // IMPORTANT: In Production, replace "localhost" with your actual frontend domain (e.g., https://badmintonshop.com).
         // Using "*" (Wildcard) is NOT recommended for security, especially when allowCredentials is true.
         configuration.setAllowedOrigins(List.of(
-            "http://localhost:3000",  // Local React/Next.js
-            "http://localhost:5173",  // Local Vite/Vue
-            "https://badmintonshop.com", // Production Domain
-            "https://admin.badmintonshop.com" // Admin Portal Domain
+            "http://localhost:3000"  // Local React/Next.js
+            , "http://localhost:5173"  // Local Vite/Vue
+            // , "https://badmintonshop.com" // Production Domain
+            // , "https://admin.badmintonshop.com" // Admin Portal Domain
         ));
 
         // 2. Allowed Methods: Which HTTP methods are permitted?

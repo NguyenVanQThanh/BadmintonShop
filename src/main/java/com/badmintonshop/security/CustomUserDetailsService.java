@@ -1,7 +1,7 @@
 package com.badmintonshop.security;
 
-import com.badmintonshop.entity.Employee;
-import com.badmintonshop.repository.EmployeeRepository;
+import com.badmintonshop.entity.Account;
+import com.badmintonshop.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -26,7 +26,7 @@ import java.util.Collections;
 @Slf4j
 public class CustomUserDetailsService implements UserDetailsService {
 
-    private final EmployeeRepository employeeRepository;
+    private final AccountRepository accountRepository;
 
     /**
      * Loads the user details by the given username (email in this context).
@@ -41,7 +41,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         log.debug("Attempting to load user details for email: {}", email);
 
         // 1. Retrieve the employee from the database
-        Employee employee = employeeRepository.findByEmail(email)
+        Account employee = accountRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("Authentication failed: User not found with email: {}", email);
                     return new UsernameNotFoundException("User not found with email: " + email);
@@ -49,7 +49,7 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         // 2. Convert the Employee's Role into a Spring Security Authority
         // Example: RoleName.ROLE_ADMIN is converted to the String "ROLE_ADMIN"
-        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(employee.getRole().getName().name());
+        SimpleGrantedAuthority authority = new SimpleGrantedAuthority(employee.getRole().name());
 
         log.debug("User found: {}. Assigning authority: {}", email, authority.getAuthority());
 

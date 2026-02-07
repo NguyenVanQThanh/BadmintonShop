@@ -90,14 +90,14 @@ public class AdminEmployeeController {
      * @param request The payload containing updated details.
      * @return A ResponseEntity containing the updated employee data.
      */
-    @PutMapping("/{id}")
-    public ResponseEntity<EmployeeResponse> updateEmployee(
-            @PathVariable Long id,
-            @RequestBody @Valid EmployeeRequest request
-    ) {
-        // Added @Valid here as well
-        return ResponseEntity.ok(employeeService.updateEmployee(id, request));
-    }
+    // @PutMapping("/{id}")
+    // public ResponseEntity<EmployeeResponse> updateEmployee(
+    //         @PathVariable Long id,
+    //         @RequestBody @Valid EmployeeRequest request
+    // ) {
+    //     // Added @Valid here as well
+    //     return ResponseEntity.ok(employeeService.updateEmployee(id, request));
+    // }
 
     /**
      * Deactivates (Soft Deletes) an employee account.

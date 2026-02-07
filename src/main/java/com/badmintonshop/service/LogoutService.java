@@ -68,7 +68,7 @@ public class LogoutService implements LogoutHandler {
             // Clear the security context explicitly
             SecurityContextHolder.clearContext();
             
-            log.info("Logout successful. Token revoked for user ID: {}", storedToken.getEmployee().getId());
+            log.info("Logout successful. Token revoked for user ID: {}", storedToken.getAccount().getId());
         } else {
             log.warn("Logout attempt failed: Token not found in database or already deleted.");
         }

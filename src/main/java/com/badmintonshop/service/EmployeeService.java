@@ -6,13 +6,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; // Use Spring's Transactional for readOnly support
 
-import com.badmintonshop.entity.Employee;
-import com.badmintonshop.entity.Role;
+import com.badmintonshop.entity.Account;
 import com.badmintonshop.exception.ResourceNotFoundException;
 import com.badmintonshop.payload.request.EmployeeRequest;
 import com.badmintonshop.payload.response.EmployeeResponse;
-import com.badmintonshop.repository.EmployeeRepository;
-import com.badmintonshop.repository.RoleRepository;
+import com.badmintonshop.repository.AccountRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,9 +26,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class EmployeeService {
 
-    private final EmployeeRepository employeeRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
-    private final RoleRepository roleRepository;
 
     /**
      * Retrieves a list of all employees in the system.
@@ -42,7 +39,7 @@ public class EmployeeService {
      */
     @Transactional(readOnly = true) // Performance optimization: Hibernate avoids dirty checking
     public List<EmployeeResponse> getAllEmployees() {
-        return employeeRepository.findAll().stream()
+        return accountRepository.findAll().stream()
                 .map(this::mapToResponse)
                 .toList();
     }
@@ -56,9 +53,9 @@ public class EmployeeService {
      */
     @Transactional(readOnly = true)
     public EmployeeResponse getEmployeeById(Long id) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
-        return mapToResponse(employee);
+        Account account = accountRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));
+        return mapToResponse(account);
     }
 
     /**
@@ -78,29 +75,18 @@ public class EmployeeService {
     @Transactional
     public EmployeeResponse createEmployee(EmployeeRequest request) {
         // 1. Enforce unique email constraint
-        if (employeeRepository.existsByEmail(request.getEmail())) {
+        if (accountRepository.existsByEmail(request.getEmail())) {
             throw new IllegalStateException("Email " + request.getEmail() + " is already taken.");
         }
 
-        // 2. Fetch and validate Role
-        Role role = roleRepository.findByName(request.getRole())
-                .orElseThrow(() -> new ResourceNotFoundException("Role configuration not found for: " + request.getRole()));
-
         // 3. Build Entity with security defaults
-        Employee employee = Employee.builder()
+        Account account = Account.builder()
                 .email(request.getEmail())
-                .password(passwordEncoder.encode(request.getPassword())) // CRITICAL: Always encode passwords
-                .fullName(request.getFullName())
-                .phoneNumber(request.getPhoneNumber())
-                .employeeCode(request.getEmployeeCode())
-                .role(role)
+                .password(passwordEncoder.encode(request.getPassword()))
                 .enabled(true)
-                .accountNonLocked(true)
-                .accountNonExpired(true)
-                .credentialsNonExpired(true)
                 .build();
 
-        Employee saved = employeeRepository.save(employee);
+        Account saved = accountRepository.save(account);
         return mapToResponse(saved);
     }
 
@@ -116,24 +102,16 @@ public class EmployeeService {
      * @return The updated employee DTO.
      * @throws ResourceNotFoundException if the employee or role is not found.
      */
-    @Transactional
-    public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
-        Employee existingEmployee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+    // @Transactional
+    // public EmployeeResponse updateEmployee(Long id, EmployeeRequest request) {
+    //     Account existingAccount = accountRepository.findById(id)
+    //             .orElseThrow(() -> new ResourceNotFoundException("Not found Account with id: " + id));
 
-        // Update basic fields
-        existingEmployee.setFullName(request.getFullName());
-        existingEmployee.setPhoneNumber(request.getPhoneNumber());
+    //     // Update basic fields
+    //     existingAccount.setEmail(request.getEmail());
 
-        // Update Role logic: Only if provided and different
-        if (request.getRole() != null && !existingEmployee.getRole().getName().equals(request.getRole())) {
-            Role newRole = roleRepository.findByName(request.getRole())
-                    .orElseThrow(() -> new ResourceNotFoundException("Role configuration not found for: " + request.getRole()));
-            existingEmployee.setRole(newRole);
-        }
-
-        return mapToResponse(employeeRepository.save(existingEmployee));
-    }
+    //     return mapToResponse(accountRepository.save(existingAccount));
+    // }
 
     /**
      * Performs a "Soft Delete" on an employee account.
@@ -148,12 +126,12 @@ public class EmployeeService {
      */
     @Transactional
     public void deleteEmployee(Long id) {
-        Employee existing = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Not found Employee with id: " + id));
+        Account existing = accountRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Not found Account with id: " + id));
 
         // Soft delete: Deactivate the account
         existing.setEnabled(false);
-        employeeRepository.save(existing);
+        accountRepository.save(existing);
     }
 
     /**
@@ -166,16 +144,11 @@ public class EmployeeService {
      * @param employee The source entity.
      * @return The target DTO.
      */
-    private EmployeeResponse mapToResponse(Employee employee) {
+    private EmployeeResponse mapToResponse(Account account) {
         return EmployeeResponse.builder()
-                .id(employee.getId())
-                .email(employee.getEmail())
-                .fullName(employee.getFullName())
-                .phoneNumber(employee.getPhoneNumber())
-                .employeeCode(employee.getEmployeeCode())
-                // Safe handling of Role to avoid NullPointerException
-                .role(employee.getRole() != null ? employee.getRole().getName().name() : "N/A")
-                .enabled(employee.isEnabled())
+                .id(account.getId())
+                .email(account.getEmail())
+                .enabled(account.isEnabled())
                 .build();
     }
 }

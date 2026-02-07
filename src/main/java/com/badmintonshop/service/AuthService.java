@@ -1,12 +1,12 @@
 package com.badmintonshop.service;
 
-import com.badmintonshop.entity.Employee;
+import com.badmintonshop.entity.Account;
 import com.badmintonshop.entity.Token;
 import com.badmintonshop.entity.enums.TokenType;
 import com.badmintonshop.exception.ResourceNotFoundException;
 import com.badmintonshop.payload.request.LoginRequest;
 import com.badmintonshop.payload.response.AuthResponse;
-import com.badmintonshop.repository.EmployeeRepository;
+import com.badmintonshop.repository.AccountRepository;
 import com.badmintonshop.repository.TokenRepository;
 import com.badmintonshop.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -41,7 +41,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final TokenRepository tokenRepository;
-    private final EmployeeRepository employeeRepository;
+    private final AccountRepository accountRepository;
 
     /**
      * Authenticates a user based on email and password.
@@ -75,7 +75,7 @@ public class AuthService {
 
             // 3. Retrieve the full User Entity from DB
             // We need the entity to associate it with the Token record in the database.
-            Employee user = employeeRepository.findByEmail(loginRequest.getEmail())
+            Account user = accountRepository.findByEmail(loginRequest.getEmail())
                     .orElseThrow(() -> new ResourceNotFoundException("User entity not found for email: " + loginRequest.getEmail()));
 
             // 4. Generate the JWT Token (Signed with Secret Key)
@@ -119,9 +119,9 @@ public class AuthService {
      * @param user     The employee owner of the token.
      * @param jwtToken The JWT string.
      */
-    private void saveUserToken(Employee user, String jwtToken) {
+    private void saveUserToken(Account user, String jwtToken) {
         var token = Token.builder()
-                .employee(user)
+                .account(user)
                 .token(jwtToken)
                 .tokenType(TokenType.BEARER)
                 .expired(false)
@@ -137,9 +137,9 @@ public class AuthService {
      * and marks them as invalid. This prevents replay attacks using old tokens.
      * </p>
      *
-     * @param user The employee whose tokens should be revoked.
+     * @param user The account whose tokens should be revoked.
      */
-    private void revokeAllUserTokens(Employee user) {
+    private void revokeAllUserTokens(Account user) {
         List<Token> validUserTokens = tokenRepository.findAllValidTokenByUser(user.getId());
         if (validUserTokens.isEmpty())
             return;

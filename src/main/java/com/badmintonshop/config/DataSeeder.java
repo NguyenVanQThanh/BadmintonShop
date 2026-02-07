@@ -1,13 +1,9 @@
 package com.badmintonshop.config;
 
-import com.badmintonshop.entity.Employee;
-import com.badmintonshop.entity.Permission;
-import com.badmintonshop.entity.Role;
+import com.badmintonshop.entity.Account;
 import com.badmintonshop.entity.enums.PermissionName;
 import com.badmintonshop.entity.enums.RoleName;
-import com.badmintonshop.repository.EmployeeRepository;
-import com.badmintonshop.repository.PermissionRepository;
-import com.badmintonshop.repository.RoleRepository;
+import com.badmintonshop.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -32,9 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DataSeeder implements CommandLineRunner {
 
-    private final PermissionRepository permissionRepository;
-    private final RoleRepository roleRepository;
-    private final EmployeeRepository employeeRepository;
+    private final AccountRepository accountRepository;
     private final PasswordEncoder passwordEncoder;
 
     /**
@@ -51,109 +45,9 @@ public class DataSeeder implements CommandLineRunner {
     public void run(String... args) {
         log.info("Starting data seeding process...");
         long startTime = System.currentTimeMillis();
-
-        // 1. Initialize Permissions
-        Map<PermissionName, Permission> permissions = initPermissions();
-
-        // 2. Initialize Roles with mapped Permissions
-        Map<RoleName, Role> roles = initRoles(permissions);
-
-        // 3. Initialize Default Employees
-        initEmployees(roles);
-
+        initEmployees();
         long duration = System.currentTimeMillis() - startTime;
         log.info("Data seeding completed successfully in {} ms.", duration);
-    }
-
-    // =========================================================================
-    // 1. PERMISSION INITIALIZATION
-    // =========================================================================
-
-    /**
-     * Ensures all permissions defined in the {@link PermissionName} enum exist in the database.
-     *
-     * @return A map of PermissionName to the persisted Permission entity.
-     */
-    private Map<PermissionName, Permission> initPermissions() {
-        Map<PermissionName, Permission> savedPermissions = new HashMap<>();
-
-        for (PermissionName permissionName : PermissionName.values()) {
-            Permission permission = permissionRepository.findByName(permissionName)
-                    .orElseGet(() -> {
-                        Permission newPerm = new Permission();
-                        newPerm.setName(permissionName);
-                        newPerm.setDescription("System generated permission for " + permissionName.name());
-                        log.info("Seeding new Permission: {}", permissionName.name());
-                        return permissionRepository.save(newPerm);
-                    });
-            savedPermissions.put(permissionName, permission);
-        }
-        return savedPermissions;
-    }
-
-    // =========================================================================
-    // 2. ROLE INITIALIZATION
-    // =========================================================================
-
-    /**
-     * Ensures all standard roles exist in the database and assigns default permissions.
-     *
-     * @param allPerms A map of all available permissions.
-     * @return A map of RoleName to the persisted Role entity.
-     */
-    private Map<RoleName, Role> initRoles(Map<PermissionName, Permission> allPerms) {
-        Map<RoleName, Role> savedRoles = new HashMap<>();
-
-        // --- ADMIN Configuration ---
-        Set<Permission> adminPerms = new HashSet<>(allPerms.values());
-        savedRoles.put(RoleName.ADMIN, createRoleIfNotFound(RoleName.ADMIN, adminPerms));
-
-        // --- MANAGER Configuration ---
-        Set<Permission> managerPerms = allPerms.entrySet().stream()
-                .filter(entry -> !entry.getKey().name().endsWith("_DELETE"))
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toSet());
-        savedRoles.put(RoleName.MANAGER, createRoleIfNotFound(RoleName.MANAGER, managerPerms));
-
-        // --- STAFF Configuration ---
-        Set<PermissionName> staffAllowed = Set.of(
-                PermissionName.ORDER_READ, PermissionName.ORDER_CREATE, PermissionName.ORDER_UPDATE,
-                PermissionName.CUSTOMER_READ, PermissionName.CUSTOMER_CREATE, PermissionName.CUSTOMER_UPDATE,
-                PermissionName.PRODUCT_READ,
-                PermissionName.INVENTORY_READ,
-                PermissionName.DASHBOARD_VIEW
-        );
-        Set<Permission> staffPerms = filterPermissions(allPerms, staffAllowed);
-        savedRoles.put(RoleName.STAFF, createRoleIfNotFound(RoleName.STAFF, staffPerms));
-
-        // --- WAREHOUSE Configuration ---
-        Set<PermissionName> warehouseAllowed = Set.of(
-                PermissionName.INVENTORY_READ, PermissionName.INVENTORY_IMPORT, PermissionName.INVENTORY_EXPORT,
-                PermissionName.PRODUCT_READ,
-                PermissionName.ORDER_READ, PermissionName.ORDER_UPDATE
-        );
-        Set<Permission> warehousePerms = filterPermissions(allPerms, warehouseAllowed);
-        savedRoles.put(RoleName.WAREHOUSE, createRoleIfNotFound(RoleName.WAREHOUSE, warehousePerms));
-
-        return savedRoles;
-    }
-
-    private Role createRoleIfNotFound(RoleName name, Set<Permission> permissions) {
-        return roleRepository.findByName(name)
-                .orElseGet(() -> {
-                    Role newRole = new Role();
-                    newRole.setName(name);
-                    newRole.setPermissions(permissions);
-                    log.info("Seeding new Role: {}", name);
-                    return roleRepository.save(newRole);
-                });
-    }
-
-    private Set<Permission> filterPermissions(Map<PermissionName, Permission> allPerms, Set<PermissionName> allowedNames) {
-        return allPerms.entrySet().stream()
-                .filter(entry -> allowedNames.contains(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .collect(Collectors.toSet());
     }
 
     // =========================================================================
@@ -165,34 +59,28 @@ public class DataSeeder implements CommandLineRunner {
      *
      * @param roles A map of available roles.
      */
-    private void initEmployees(Map<RoleName, Role> roles) {
+    private void initEmployees() {
         // Param order: Email, Full Name, Role, Phone, Employee Code
-        createEmployeeIfNotFound("admin@gmail.com", "Super Admin", roles.get(RoleName.ADMIN), "0900000001", "ADM001");
-        createEmployeeIfNotFound("manager@gmail.com", "Store Manager", roles.get(RoleName.MANAGER), "0900000002", "MGR001");
-        createEmployeeIfNotFound("staff@gmail.com", "Sales Staff", roles.get(RoleName.STAFF), "0900000003", "STF001");
-        createEmployeeIfNotFound("warehouse@gmail.com", "Stock Keeper", roles.get(RoleName.WAREHOUSE), "0900000004", "WAR001");
+        createEmployeeIfNotFound("admin@gmail.com", RoleName.ADMIN, "0900000001", "ADM001");
+        createEmployeeIfNotFound("casher1@gmail.com", RoleName.CASHER, "0900000002", "MGR001");
+        createEmployeeIfNotFound("casher2@gmail.com",RoleName.CASHER, "0900000003", "STF001");
+        createEmployeeIfNotFound("casher3@gmail.com",RoleName.CASHER, "0900000004", "WAR001");
     }
 
-    private void createEmployeeIfNotFound(String email, String fullName, Role role, String phoneNumber, String empCode) {
-        if (employeeRepository.existsByEmail(email)) {
+    private void createEmployeeIfNotFound(String email, RoleName role, String phoneNumber, String empCode) {
+        if (accountRepository.existsByEmail(email)) {
             log.debug("Employee account {} already exists. Skipping.", email);
             return;
         }
 
-        Employee employee = Employee.builder()
+        Account account = Account.builder()
                 .email(email)
-                .fullName(fullName)
                 .password(passwordEncoder.encode("123456")) // Default password
                 .role(role)
-                .phoneNumber(phoneNumber)
-                .employeeCode(empCode)
                 .enabled(true)
-                .accountNonLocked(true)
-                .accountNonExpired(true)
-                .credentialsNonExpired(true)
                 .build();
 
-        employeeRepository.save(employee);
-        log.info("Seeding new Employee account: {} ({})", email, role.getName());
+        accountRepository.save(account);
+        log.info("Seeding new account: {} ({})", email, role.name());
     }
 }
