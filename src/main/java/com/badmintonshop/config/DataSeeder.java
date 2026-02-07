@@ -1,7 +1,6 @@
 package com.badmintonshop.config;
 
 import com.badmintonshop.entity.Account;
-import com.badmintonshop.entity.enums.PermissionName;
 import com.badmintonshop.entity.enums.RoleName;
 import com.badmintonshop.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,9 +9,6 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * DataSeeder initializes the database with critical reference data upon application startup.
@@ -62,9 +58,9 @@ public class DataSeeder implements CommandLineRunner {
     private void initEmployees() {
         // Param order: Email, Full Name, Role, Phone, Employee Code
         createEmployeeIfNotFound("admin@gmail.com", RoleName.ADMIN, "0900000001", "ADM001");
-        createEmployeeIfNotFound("casher1@gmail.com", RoleName.CASHER, "0900000002", "MGR001");
-        createEmployeeIfNotFound("casher2@gmail.com",RoleName.CASHER, "0900000003", "STF001");
-        createEmployeeIfNotFound("casher3@gmail.com",RoleName.CASHER, "0900000004", "WAR001");
+        createEmployeeIfNotFound("cashier1@gmail.com", RoleName.CASHIER, "0900000002", "MGR001");
+        createEmployeeIfNotFound("cashier2@gmail.com",RoleName.CASHIER, "0900000003", "STF001");
+        createEmployeeIfNotFound("cashier3@gmail.com",RoleName.CASHIER, "0900000004", "WAR001");
     }
 
     private void createEmployeeIfNotFound(String email, RoleName role, String phoneNumber, String empCode) {

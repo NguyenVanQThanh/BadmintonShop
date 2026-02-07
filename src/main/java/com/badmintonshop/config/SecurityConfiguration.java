@@ -59,9 +59,9 @@ public class SecurityConfiguration {
             
             // 3. Authorization Rules: Define which endpoints are public and which are protected.
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll() // Allow unauthenticated access to Login/Register
-                .requestMatchers("/api/admin/employees/**").hasRole("ADMIN")
-                .requestMatchers("/api/employee/**").hasAnyRole("ADMIN", "MANAGER", "STAFF", "WAREHOUSE")
+                .requestMatchers("/api/account/auth/**").permitAll() // Allow unauthenticated access to Login/Register
+                .requestMatchers("/api/admin/accounts/**").hasRole("ADMIN")
+                .requestMatchers("/api/account/**").hasAnyRole("ADMIN", "CASHIER")
                 .anyRequest().authenticated() // Require authentication for all other endpoints
             )
             
@@ -80,7 +80,7 @@ public class SecurityConfiguration {
 
             // 7. Logout Configuration: Define the logout URL and the custom logout handler.
             .logout(logout -> logout
-                .logoutUrl("/api/employee/auth/logout")
+                .logoutUrl("/api/account/auth/logout")
                 .addLogoutHandler(logoutHandler)
                 .logoutSuccessHandler((request, response, authentication)-> SecurityContextHolder.clearContext())
             );

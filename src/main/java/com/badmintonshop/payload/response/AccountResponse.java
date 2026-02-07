@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
- * Data Transfer Object (DTO) for returning Employee details.
+ * Data Transfer Object (DTO) for returning Account details.
  * <p>
  * Safe for client-side usage (No passwords, flattened structure).
  * </p>
@@ -15,17 +15,11 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EmployeeResponse {
+public class AccountResponse {
 
     private Long id;
 
     private String email;
-
-    private String fullName;
-
-    private String employeeCode;
-
-    private String phoneNumber;
 
     /**
      * Role name as String (e.g., "ADMIN", "STAFF") for easy display on Frontend.

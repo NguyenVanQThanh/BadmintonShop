@@ -6,10 +6,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import lombok.RequiredArgsConstructor;
 
-@RequestMapping("/api/employees")
+@RequestMapping("/api/account")
 @RestController()
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'STAFF', 'USER')")
-public class EmployeeController {
+public class AccountController {
     
 }

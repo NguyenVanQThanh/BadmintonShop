@@ -7,9 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import com.badmintonshop.payload.request.EmployeeRequest;
-import com.badmintonshop.payload.response.EmployeeResponse;
-import com.badmintonshop.service.EmployeeService;
+import com.badmintonshop.payload.request.AccountRequest;
+import com.badmintonshop.payload.response.AccountResponse;
+import com.badmintonshop.service.AccountService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,15 +21,15 @@ import lombok.RequiredArgsConstructor;
  * Access is strictly restricted to users with the 'ADMIN' role via {@link PreAuthorize}.
  * </p>
  *
- * @see EmployeeService
+ * @see accountService
  */
 @RestController
-@RequestMapping("/api/admin/employees")
+@RequestMapping("/api/admin/accounts")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
-public class AdminEmployeeController {
+public class AdminAccountController {
 
-    private final EmployeeService employeeService;
+    private final AccountService accountService;
 
     /**
      * Retrieves a list of all registered employees.
@@ -38,11 +38,11 @@ public class AdminEmployeeController {
      * Endpoint: /api/admin/employees
      * </p>
      *
-     * @return A ResponseEntity containing the list of {@link EmployeeResponse} DTOs.
+     * @return A ResponseEntity containing the list of {@link AccountResponse} DTOs.
      */
     @GetMapping
-    public ResponseEntity<List<EmployeeResponse>> getAllEmployees() {
-        return ResponseEntity.ok(employeeService.getAllEmployees());
+    public ResponseEntity<List<AccountResponse>> getAllAccounts() {
+        return ResponseEntity.ok(accountService.getAllAccounts());
     }
 
     /**
@@ -53,11 +53,11 @@ public class AdminEmployeeController {
      * </p>
      *
      * @param id The unique identifier of the employee.
-     * @return A ResponseEntity containing the {@link EmployeeResponse}.
+     * @return A ResponseEntity containing the {@link AccountResponse}.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<EmployeeResponse> getEmployeeById(@PathVariable Long id) {
-        return ResponseEntity.ok(employeeService.getEmployeeById(id));
+    public ResponseEntity<AccountResponse> getAccountById(@PathVariable Long id) {
+        return ResponseEntity.ok(accountService.getAccountById(id));
     }
 
     /**
@@ -73,30 +73,30 @@ public class AdminEmployeeController {
      * @return A ResponseEntity containing the created employee data and HTTP status 201.
      */
     @PostMapping
-    public ResponseEntity<EmployeeResponse> createEmployee(@RequestBody @Valid EmployeeRequest request) {
+    public ResponseEntity<AccountResponse> createAccount(@RequestBody @Valid AccountRequest request) {
         // IMPORTANT: Added @Valid to trigger validation annotations in the DTO
         // Changed return status from 200 OK to 201 CREATED for standard REST practice
-        return new ResponseEntity<>(employeeService.createEmployee(request), HttpStatus.CREATED);
+        return new ResponseEntity<>(accountService.createAccount(request), HttpStatus.CREATED);
     }
 
     /**
-     * Updates an existing employee's information.
+     * Updates an existing account's information.
      * <p>
      * HTTP Method: PUT
-     * Endpoint: /api/admin/employees/{id}
+     * Endpoint: /api/admin/accounts/{id}
      * </p>
      *
-     * @param id      The unique identifier of the employee to update.
+     * @param id      The unique identifier of the account to update.
      * @param request The payload containing updated details.
-     * @return A ResponseEntity containing the updated employee data.
+     * @return A ResponseEntity containing the updated account data.
      */
     // @PutMapping("/{id}")
-    // public ResponseEntity<EmployeeResponse> updateEmployee(
+    // public ResponseEntity<AccountResponse> updateAccount(
     //         @PathVariable Long id,
-    //         @RequestBody @Valid EmployeeRequest request
+    //         @RequestBody @Valid AccountRequest request
     // ) {
     //     // Added @Valid here as well
-    //     return ResponseEntity.ok(employeeService.updateEmployee(id, request));
+    //     return ResponseEntity.ok(accountService.updateAccount(id, request));
     // }
 
     /**
@@ -111,8 +111,8 @@ public class AdminEmployeeController {
      * @return A ResponseEntity with a success message.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEmployee(@PathVariable Long id) {
-        employeeService.deleteEmployee(id);
-        return ResponseEntity.ok("Employee deactivated successfully");
+    public ResponseEntity<?> deleteAccount(@PathVariable Long id) {
+        accountService.deleteAccount(id);
+        return ResponseEntity.ok("Account deactivated successfully");
     }
 }

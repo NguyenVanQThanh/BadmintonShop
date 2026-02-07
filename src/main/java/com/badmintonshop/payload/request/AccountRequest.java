@@ -4,12 +4,11 @@ import com.badmintonshop.entity.enums.RoleName;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 /**
- * Data Transfer Object (DTO) for Employee creation and update requests.
+ * Data Transfer Object (DTO) for Account creation and update requests.
  * <p>
  * This class carries data from the client to the server.
  * Automatic validation annotations are applied to ensure data integrity
@@ -17,7 +16,7 @@ import lombok.Data;
  * </p>
  */
 @Data
-public class EmployeeRequest {
+public class AccountRequest {
 
     /**
      * The employee's email address. Must be unique in the system.
@@ -35,32 +34,6 @@ public class EmployeeRequest {
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters long")
     private String password;
-
-    /**
-     * The employee's full legal name.
-     */
-    @NotBlank(message = "Full name is required")
-    private String fullName;
-
-    /**
-     * The contact phone number.
-     * <p>
-     * Validates that the input contains 10-11 digits (adjust regex based on local standards).
-     * </p>
-     */
-    @NotBlank(message = "Phone number is required")
-    @Pattern(regexp = "^\\d{10,11}$", message = "Phone number must be between 10 and 11 digits")
-    private String phoneNumber;
-
-    /**
-     * Employee Code.
-     * <p>
-     * If your system auto-generates this, remove this field.
-     * If Admin inputs it manually, keep it validated.
-     * </p>
-     */
-    @NotBlank(message = "Employee code is required")
-    private String employeeCode;
     /**
      * The specific role assigned to the employee.
      * <p>

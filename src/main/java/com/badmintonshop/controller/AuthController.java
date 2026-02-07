@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
  * Controller for handling authentication requests.
  */
 @RestController
-@RequestMapping("/api/employee/auth")
+@RequestMapping("/api/account/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
@@ -20,7 +20,7 @@ public class AuthController {
 
     /**
      * Endpoint for user login.
-     * URL: POST /api/auth/login
+     * URL: POST /api/account/auth/login
      */
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
