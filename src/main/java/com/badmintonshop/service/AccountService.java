@@ -153,6 +153,7 @@ public class AccountService {
                 .id(account.getId())
                 .email(account.getEmail())
                 .enabled(account.isEnabled())
+                .role(account.getRole().name())
                 .build();
     }
 }
