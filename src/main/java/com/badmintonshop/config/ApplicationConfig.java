@@ -1,7 +1,13 @@
 package com.badmintonshop.config;
 
 import com.badmintonshop.repository.AccountRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.RequiredArgsConstructor;
+
+import java.lang.module.ModuleDescriptor.Provides;
+
+import org.apache.poi.sl.usermodel.ObjectMetaData.Application;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -80,5 +86,26 @@ public class ApplicationConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+    
+    /**
+     * Provides the primary {@link ObjectMapper} bean for the Spring Application Context.
+     * <p>
+     * <b>Role:</b> The ObjectMapper is the core component of the Jackson library,
+     * responsible for data binding (converting JSON to Java Objects and vice versa).
+     * It is essential for processing JSON data in the {@code ExcelDataSeeder} 
+     * and handling JSONB columns in entities.
+     * </p>
+     * <p>
+     * <b>Configuration Note:</b> Explicitly defining this bean guarantees its availability 
+     * for Dependency Injection, preventing "Parameter required a bean of type ObjectMapper" 
+     * errors during application startup.
+     * </p>
+     *
+     * @return A standard, fresh instance of {@link ObjectMapper}.
+     */
+    @Bean
+    public ObjectMapper objectMapper() {
+        return new ObjectMapper();
     }
 }

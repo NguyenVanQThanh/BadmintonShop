@@ -1,80 +1,119 @@
 package com.badmintonshop.entity;
 
-import com.badmintonshop.entity.json.ProductAttributes;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
-import lombok.Data;
-import lombok.ToString;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Represents a specific Stock Keeping Unit (SKU) or variation of a product.
+ * Represents a specific Stock Keeping Unit (SKU) or a concrete variation of a Product.
  * <p>
- * While the {@link Product} entity holds general information (Name, Brand),
- * this entity holds the specific sellable inventory data (Price, Stock, Specific Specs).
- * Example: "Yonex Astrox 100ZZ" is the Product, but "4U-G5 version" is the Variant.
+ * While the {@link Product} entity defines the general information (e.g., "Yonex Astrox 77"),
+ * the ProductVariant defines the specific physical item (e.g., "Yonex Astrox 77 - 4U/G5 - Red").
+ * </p>
+ * <p>
+ * <b>Technical Note:</b> Uses Hibernate 6+ Native JSON support to store dynamic attributes
+ * in PostgreSQL JSONB columns. No external libraries required.
  * </p>
  */
 @Entity
 @Table(name = "product_variants")
 @Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ProductVariant {
 
+    /**
+     * Unique identifier for the variant.
+     * Primary Key, auto-incremented by the database.
+     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     /**
-     * The parent product to which this variant belongs.
+     * Stock Keeping Unit (SKU) code.
      * <p>
-     * <b>FetchType.LAZY:</b> Used for performance optimization. The parent product data 
-     * is only loaded from the database when explicitly accessed via {@code getProduct()}.
+     * A unique alphanumeric code used for inventory management and barcode scanning.
+     * Must be unique across the entire system.
+     * </p>
+     */
+    @Column(nullable = false, unique = true)
+    private String sku;
+
+    /**
+     * The selling price of this specific variant.
+     * <p>
+     * <b>Mandatory:</b> Uses {@code BigDecimal} for financial calculations to ensure precision
+     * and avoid floating-point errors (e.g., IEEE 754 issues with double).
+     * </p>
+     */
+    @Column(nullable = false)
+    private BigDecimal price;
+
+    /**
+     * Current available quantity in the warehouse.
+     * <p>
+     * Uses {@code @Builder.Default} to initialize stock to 0, preventing NullPointerExceptions
+     * during business logic processing if the field is omitted.
+     * </p>
+     */
+    @Column(name = "stock_quantity")
+    @Builder.Default
+    private Integer stockQuantity = 0;
+
+    /**
+     * Specific image URL for this variant.
+     * <p>
+     * Useful when different variants have distinct appearances (e.g., Blue vs. Red colorways).
+     * If null, the frontend should fallback to the parent Product's thumbnail.
+     * </p>
+     */
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    // ========================================================================
+    // DYNAMIC ATTRIBUTES (NATIVE JSON)
+    // ========================================================================
+
+    /**
+     * Stores dynamic product attributes using PostgreSQL JSONB.
+     * <p>
+     * <b>Usage:</b>
+     * <ul>
+     * <li>Key: Attribute name (e.g., "weight", "grip_size", "tension").</li>
+     * <li>Value: Attribute value (e.g., "4U", "G5", "28lbs").</li>
+     * </ul>
+     * </p>
+     * <p>
+     * <b>Technical:</b> Annotated with {@code @JdbcTypeCode(SqlTypes.JSON)} to leverage
+     * Hibernate 6's native JSON mapping capabilities.
+     * </p>
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb", nullable = false)
+    @Builder.Default
+    private Map<String, Object> attributes = new HashMap<>();
+
+    // ========================================================================
+    // RELATIONSHIPS
+    // ========================================================================
+
+    /**
+     * The parent generic product definition.
+     * <p>
+     * <b>Performance:</b> Uses {@code FetchType.LAZY} to prevent loading heavy Product details
+     * (like descriptions) when only variant info (like price/SKU) is needed (e.g., in a Cart).
      * </p>
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
-    @ToString.Exclude // Critical: Prevents circular reference loops during logging
+    @JsonIgnore
     private Product product;
-
-    /**
-     * Unique Stock Keeping Unit (SKU) code.
-     * <p>
-     * Used for inventory tracking and barcode scanning.
-     * Example: "100ZZ-4U-G5"
-     * </p>
-     */
-    @Column(unique = true, nullable = false)
-    private String sku;
-
-    @Column(nullable = false)
-    private Double price;
-
-    private Integer stockQuantity = 0;
-
-    /**
-     * Polymorphic column storing category-specific technical attributes.
-     * <p>
-     * Mapped to a PostgreSQL <b>JSONB</b> column for schema flexibility.
-     * This field can hold {@link com.badmintonshop.entity.json.RacketAttributes}, 
-     * {@link com.badmintonshop.entity.json.ShoeAttributes}, etc., based on the context.
-     * </p>
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private ProductAttributes attributes;
-
-    /**
-     * A list of specific image URLs for this variant.
-     * <p>
-     * Stores multiple images (e.g., different angles of a specific colorway) 
-     * as a JSON array in the database.
-     * Example: {@code ["url_front.jpg", "url_side.jpg", "url_sole.jpg"]}
-     * </p>
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(columnDefinition = "jsonb")
-    private List<String> imageUrls = new ArrayList<>();
 }
