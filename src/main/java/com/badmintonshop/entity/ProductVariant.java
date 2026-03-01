@@ -64,7 +64,7 @@ public class ProductVariant {
      * during business logic processing if the field is omitted.
      * </p>
      */
-    @Column(name = "stock_quantity")
+    @Column
     @Builder.Default
     private Integer stockQuantity = 0;
 
@@ -75,7 +75,7 @@ public class ProductVariant {
      * If null, the frontend should fallback to the parent Product's thumbnail.
      * </p>
      */
-    @Column(name = "image_url")
+    @Column
     private String imageUrl;
 
     // ========================================================================
@@ -113,7 +113,7 @@ public class ProductVariant {
      * </p>
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "productId", nullable = false)
     @JsonIgnore
     private Product product;
 }

@@ -2,6 +2,7 @@ package com.badmintonshop.config;
 
 import com.badmintonshop.entity.*;
 import com.badmintonshop.repository.*;
+import com.badmintonshop.service.FirebaseStorageService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +25,16 @@ import java.util.Map;
  * <b>File Source:</b> {@code src/main/resources/data/badminton_products_seed.xlsx}
  * </p>
  * <p>
+ * <b>Image Handling:</b> Column 6 of the Products sheet contains the image filename
+ * (e.g., {@code ryuga2.jpg}). On startup, the seeder loads each image from
+ * {@code src/main/resources/data/Image_Badminton/}, uploads it to Firebase Storage,
+ * and stores the returned public URL in the database.
+ * </p>
+ * <p>
  * <b>Execution Strategy:</b>
  * The seeder checks if the {@code Product} table is empty. If data exists, the process is skipped
  * to preserve data integrity and prevent duplicates.
  * </p>
- *
- * @author YourName
- * @version 1.0
  */
 @Component
 @RequiredArgsConstructor
@@ -38,6 +42,8 @@ import java.util.Map;
 public class ExcelDataSeeder implements CommandLineRunner {
 
     private static final String SEED_FILE_PATH = "data/badminton_products_seed.xlsx";
+    private static final String IMAGE_FOLDER_PATH = "data/Image_Badminton/";
+    private static final String FIREBASE_IMAGE_PREFIX = "products/";
     private static final String SHEET_BRANDS = "Brands";
     private static final String SHEET_CATEGORIES = "Categories";
     private static final String SHEET_PRODUCTS = "Products_Import";
@@ -46,13 +52,18 @@ public class ExcelDataSeeder implements CommandLineRunner {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final ProductVariantRepository productVariantRepository;
-    
+
     /**
      * Core Jackson object mapper used for parsing JSON strings from the Excel file
      * into Java Maps for the {@code attributes} JSONB column.
      */
     private final ObjectMapper objectMapper;
-    
+
+    /**
+     * Firebase Storage service used to upload product images from classpath resources.
+     */
+    private final FirebaseStorageService firebaseStorageService;
+
     /**
      * Apache POI utility for formatting cell values (ensures Numbers/Dates are read as Strings).
      */
@@ -72,15 +83,15 @@ public class ExcelDataSeeder implements CommandLineRunner {
     public void run(String... args) {
         // Idempotency check: Prevent running if data is already present
         if (productRepository.count() > 0) {
-            log.info(">>> [Data Seeder] Database is already populated. Skipping Excel import.");
+            log.info("[Data Seeder] Database is already populated. Skipping Excel import.");
             return;
         }
 
-        log.info(">>> [Data Seeder] Starting import from: {}", SEED_FILE_PATH);
+        log.info("[Data Seeder] Starting import from: {}", SEED_FILE_PATH);
         ClassPathResource resource = new ClassPathResource(SEED_FILE_PATH);
 
         if (!resource.exists()) {
-            log.error(">>> [Data Seeder] File not found: {}", SEED_FILE_PATH);
+            log.error("[Data Seeder] Seed file not found: {}", SEED_FILE_PATH);
             return;
         }
 
@@ -91,9 +102,9 @@ public class ExcelDataSeeder implements CommandLineRunner {
             importCategories(workbook.getSheet(SHEET_CATEGORIES));
             importProducts(workbook.getSheet(SHEET_PRODUCTS));
 
-            log.info(">>> [Data Seeder] Import completed successfully! 🎉");
+            log.info("[Data Seeder] Import completed successfully.");
         } catch (Exception e) {
-            log.error(">>> [Data Seeder] Critical failure during import process", e);
+            log.error("[Data Seeder] Critical failure during import process", e);
         }
     }
 
@@ -107,11 +118,11 @@ public class ExcelDataSeeder implements CommandLineRunner {
      */
     private void importBrands(Sheet sheet) {
         if (sheet == null) {
-            log.warn(">>> [Data Seeder] Sheet '{}' not found.", SHEET_BRANDS);
+            log.warn("[Data Seeder] Sheet '{}' not found. Skipping.", SHEET_BRANDS);
             return;
         }
-        log.info("--- Importing Brands ---");
-        
+        log.info("[Data Seeder] Importing Brands...");
+
         for (Row row : sheet) {
             if (row.getRowNum() == 0) continue; // Skip Header Row
 
@@ -142,11 +153,11 @@ public class ExcelDataSeeder implements CommandLineRunner {
      */
     private void importCategories(Sheet sheet) {
         if (sheet == null) {
-            log.warn(">>> [Data Seeder] Sheet '{}' not found.", SHEET_CATEGORIES);
+            log.warn("[Data Seeder] Sheet '{}' not found. Skipping.", SHEET_CATEGORIES);
             return;
         }
-        log.info("--- Importing Categories ---");
-        
+        log.info("[Data Seeder] Importing Categories...");
+
         // Map to hold temporary relationships: ChildSlug -> ParentSlug
         Map<String, String> parentSlugMap = new HashMap<>();
 
@@ -177,7 +188,7 @@ public class ExcelDataSeeder implements CommandLineRunner {
         parentSlugMap.forEach((childSlug, parentSlug) -> {
             Category child = categoryRepository.findBySlug(childSlug).orElse(null);
             Category parent = categoryRepository.findBySlug(parentSlug).orElse(null);
-            
+
             if (child != null && parent != null) {
                 child.setParent(parent);
                 categoryRepository.save(child);
@@ -191,24 +202,33 @@ public class ExcelDataSeeder implements CommandLineRunner {
      * Each row in the Excel sheet represents a specific <b>Product Variant</b> (SKU).
      * The method intelligently resolves or creates the parent Product based on the name.
      * </p>
+     * <p>
+     * <b>Upload Cache:</b> A local cache ({@code imageFileName -> Firebase URL}) is maintained
+     * for the duration of this import run. If multiple variants share the same image filename,
+     * the file is uploaded only once and the resulting URL is reused, avoiding redundant
+     * Firebase Storage requests.
+     * </p>
      *
-     * @param sheet The Excel sheet containing Product & Variant data.
+     * @param sheet The Excel sheet containing Product and Variant data.
      */
     private void importProducts(Sheet sheet) {
         if (sheet == null) {
-            log.warn(">>> [Data Seeder] Sheet '{}' not found.", SHEET_PRODUCTS);
+            log.warn("[Data Seeder] Sheet '{}' not found. Skipping.", SHEET_PRODUCTS);
             return;
         }
-        log.info("--- Importing Products & Variants ---");
-        
+        log.info("[Data Seeder] Importing Products and Variants...");
+
+        // Cache: imageFileName -> Firebase public URL (prevents re-uploading the same file)
+        Map<String, String> imageUrlCache = new HashMap<>();
+
         for (Row row : sheet) {
             if (row.getRowNum() == 0) continue;
 
             try {
-                processProductRow(row);
+                processProductRow(row, imageUrlCache);
             } catch (Exception e) {
-                // Log error specifically for this row but continue processing others
-                log.error("Error processing row {}: {}", row.getRowNum(), e.getMessage());
+                // Log error for this specific row and continue processing remaining rows
+                log.error("[Data Seeder] Failed to process row {}. Reason: {}", row.getRowNum(), e.getMessage());
             }
         }
     }
@@ -223,40 +243,44 @@ public class ExcelDataSeeder implements CommandLineRunner {
      * <li>2: Category Slug (Lookup)</li>
      * <li>3: SKU (Variant Unique Key)</li>
      * <li>4: Price</li>
-     * <li>6: Image URL</li>
-     * <li>7: JSON Attributes (Weight, Grip, etc.)</li>
+     * <li>6: Image Filename (e.g., {@code ryuga2.jpg}) — uploaded to Firebase Storage</li>
+     * <li>7: JSON Attributes (e.g., weight, grip, flex)</li>
      * </ul>
      * </p>
      *
-     * @param row The Excel Row to process.
-     * @throws Exception If Brand/Category is missing or JSON parsing fails.
+     * @param row          The Excel Row to process.
+     * @param imageUrlCache Shared cache map of {@code imageFileName -> Firebase URL} for this import run.
+     * @throws Exception If Brand/Category is not found, image upload fails, or JSON parsing fails.
      */
-    private void processProductRow(Row row) throws Exception {
+    private void processProductRow(Row row, Map<String, String> imageUrlCache) throws Exception {
         // 1. Data Extraction
         String productName = getCellValueAsString(row.getCell(0));
         String brandName = getCellValueAsString(row.getCell(1));
         String categorySlug = getCellValueAsString(row.getCell(2));
         String sku = getCellValueAsString(row.getCell(3));
-        
+
         // Price Cleanup: Remove commas (e.g., "4,500,000" -> "4500000")
         String priceStr = getCellValueAsString(row.getCell(4)).replaceAll(",", "").trim();
         BigDecimal price = priceStr.isEmpty() ? BigDecimal.ZERO : new BigDecimal(priceStr);
 
-        String imageUrl = getCellValueAsString(row.getCell(6));
+        String imageFileName = getCellValueAsString(row.getCell(6));
         String jsonAttr = getCellValueAsString(row.getCell(7));
 
         if (sku.isEmpty() || productName.isEmpty()) {
             return; // Skip invalid rows
         }
 
-        // 2. Dependency Resolution
+        // 2. Image Upload to Firebase Storage (reuse cached URL if same file was already uploaded)
+        String imageUrl = imageUrlCache.computeIfAbsent(imageFileName, this::uploadImageToFirebase);
+
+        // 3. Dependency Resolution
         Brand brand = brandRepository.findByName(brandName)
                 .orElseThrow(() -> new IllegalArgumentException("Brand not found: " + brandName));
 
         Category category = categoryRepository.findBySlug(categorySlug)
                 .orElseThrow(() -> new IllegalArgumentException("Category not found: " + categorySlug));
 
-        // 3. Parent Product Resolution (Find Existing or Create New)
+        // 4. Parent Product Resolution (Find Existing or Create New)
         Product product = productRepository.findByName(productName)
                 .orElseGet(() -> productRepository.save(Product.builder()
                         .name(productName)
@@ -267,11 +291,10 @@ public class ExcelDataSeeder implements CommandLineRunner {
                         .isActive(true)
                         .build()));
 
-        // 4. Variant Creation (Idempotent check by SKU)
+        // 5. Variant Creation (Idempotent check by SKU)
         if (!productVariantRepository.existsBySku(sku)) {
             Map<String, Object> attributes = new HashMap<>();
-            
-            // Parse JSON String to Map
+
             if (!jsonAttr.isEmpty()) {
                 attributes = objectMapper.readValue(jsonAttr, new TypeReference<Map<String, Object>>() {});
             }
@@ -286,8 +309,57 @@ public class ExcelDataSeeder implements CommandLineRunner {
                     .build();
 
             productVariantRepository.save(variant);
-            log.info("Imported Variant: {}", sku);
+            log.info("[Data Seeder] Imported variant: {}", sku);
         }
+    }
+
+    /**
+     * Uploads a product image from the classpath to Firebase Storage.
+     * <p>
+     * The image is loaded from {@code data/Image_Badminton/{imageFileName}} within the classpath.
+     * If the filename is empty or the file does not exist, an empty string is returned and
+     * a warning is logged rather than throwing an exception.
+     * </p>
+     *
+     * @param imageFileName The filename of the image (e.g., {@code ryuga2.jpg}).
+     * @return The public Firebase Storage URL, or an empty string if the file is unavailable.
+     */
+    private String uploadImageToFirebase(String imageFileName) {
+        if (imageFileName.isEmpty()) {
+            return "";
+        }
+
+        String classpathPath = IMAGE_FOLDER_PATH + imageFileName;
+        ClassPathResource imageResource = new ClassPathResource(classpathPath);
+
+        if (!imageResource.exists()) {
+            log.warn("[Data Seeder] Image file not found in classpath: '{}'. Storing empty URL.", classpathPath);
+            return "";
+        }
+
+        try (InputStream imageStream = imageResource.getInputStream()) {
+            String contentType = resolveContentType(imageFileName);
+            String firebasePath = FIREBASE_IMAGE_PREFIX + imageFileName;
+            return firebaseStorageService.uploadFileFromStream(imageStream, firebasePath, contentType);
+        } catch (Exception e) {
+            log.error("[Data Seeder] Failed to upload image '{}' to Firebase. Storing empty URL. Reason: {}",
+                    imageFileName, e.getMessage());
+            return "";
+        }
+    }
+
+    /**
+     * Resolves the MIME content type based on the file extension.
+     *
+     * @param fileName The file name including extension.
+     * @return The corresponding MIME type string. Defaults to {@code image/jpeg} for unknown extensions.
+     */
+    private String resolveContentType(String fileName) {
+        String lower = fileName.toLowerCase();
+        if (lower.endsWith(".png")) return "image/png";
+        if (lower.endsWith(".gif")) return "image/gif";
+        if (lower.endsWith(".webp")) return "image/webp";
+        return "image/jpeg"; // Default for .jpg / .jpeg
     }
 
     /**

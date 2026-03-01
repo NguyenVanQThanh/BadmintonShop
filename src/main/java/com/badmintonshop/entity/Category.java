@@ -58,7 +58,7 @@ public class Category {
      * The URL or path to the category's thumbnail image.
      * Used for UI display purposes.
      */
-    @Column(name = "image_url")
+    @Column
     private String imageUrl;
 
     // ========================================================================
@@ -74,7 +74,7 @@ public class Category {
      * </p>
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
+    @JoinColumn(name = "parentId")
     @JsonIgnore
     private Category parent;
 

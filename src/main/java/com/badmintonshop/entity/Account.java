@@ -10,6 +10,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import com.badmintonshop.entity.enums.RoleName;
 
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -60,6 +63,7 @@ public class Account implements UserDetails{
      * If false, the employee cannot log in.
      * </p>
      */
+    @Builder.Default
     private boolean enabled = true;
 
     /**
@@ -75,21 +79,12 @@ public class Account implements UserDetails{
     /**
      * Timestamps for auditing purposes.
      */
+    @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @PrePersist
-    protected void onCreate(){
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate(){
-        updatedAt = LocalDateTime.now();
-    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -119,7 +114,6 @@ public class Account implements UserDetails{
 
     @Override
     public String getUsername() {
-        // TODO Auto-generated method stub
         return this.email;
     }
 }

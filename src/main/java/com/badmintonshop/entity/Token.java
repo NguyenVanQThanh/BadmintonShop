@@ -61,7 +61,7 @@ public class Token {
      * </p>
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
+    @JoinColumn(name = "accountId", nullable = false)
     @ToString.Exclude // CRITICAL: Prevents LazyInitializationException during logging
     private Account account;
 }

@@ -47,7 +47,7 @@ public class Brand {
      * Displayed on the brand carousel or product details page.
      * </p>
      */
-    @Column(name = "logo_url")
+    @Column
     private String logoUrl;
 
     // ========================================================================

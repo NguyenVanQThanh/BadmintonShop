@@ -56,7 +56,7 @@ public class Product {
      * URL to the main representative image of the product.
      * Displayed in product grids and search results.
      */
-    @Column(name = "thumbnail_url")
+    @Column
     private String thumbnailUrl;
 
     /**
@@ -67,7 +67,7 @@ public class Product {
      * @Builder.Default is used to ensure new products are active by default.
      * </p>
      */
-    @Column(name = "is_active")
+    @Column
     @Builder.Default
     private boolean isActive = true;
 
@@ -80,7 +80,7 @@ public class Product {
      * Automatically managed by Hibernate via @CreationTimestamp.
      */
     @CreationTimestamp
-    @Column(name = "created_at", updatable = false)
+    @Column(updatable = false)
     private LocalDateTime createdAt;
 
     /**
@@ -88,7 +88,6 @@ public class Product {
      * Automatically updated by Hibernate via @UpdateTimestamp.
      */
     @UpdateTimestamp
-    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
     // ========================================================================
@@ -103,7 +102,7 @@ public class Product {
      * </p>
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "category_id")
+    @JoinColumn(name = "categoryId")
     private Category category;
 
     /**
@@ -111,7 +110,7 @@ public class Product {
      * FetchType.LAZY prevents N+1 query issues when listing products.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "brand_id")
+    @JoinColumn(name = "brandId")
     private Brand brand;
 
     /**
