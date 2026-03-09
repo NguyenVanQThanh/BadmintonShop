@@ -34,7 +34,7 @@ import lombok.RequiredArgsConstructor;
  * @see AccountService
  */
 @RestController
-@RequestMapping("/api/accounts")
+@RequestMapping("/api/admin/accounts")
 @RequiredArgsConstructor
 public class AccountController {
 

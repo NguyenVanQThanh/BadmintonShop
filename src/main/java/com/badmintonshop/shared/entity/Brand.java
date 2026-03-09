@@ -1,9 +1,13 @@
 package com.badmintonshop.shared.entity;
 
+import com.badmintonshop.shared.entity.enums.CommonStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +53,18 @@ public class Brand {
      */
     @Column
     private String logoUrl;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private CommonStatus status = CommonStatus.ACTIVE;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     // ========================================================================
     // RELATIONSHIPS

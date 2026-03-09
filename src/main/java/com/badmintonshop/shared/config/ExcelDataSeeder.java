@@ -243,6 +243,7 @@ public class ExcelDataSeeder implements CommandLineRunner {
      * <li>2: Category Slug (Lookup)</li>
      * <li>3: SKU (Variant Unique Key)</li>
      * <li>4: Price</li>
+     * <li>5: Stock Quantity</li>
      * <li>6: Image Filename (e.g., {@code ryuga2.jpg}) — uploaded to Firebase Storage</li>
      * <li>7: JSON Attributes (e.g., weight, grip, flex)</li>
      * </ul>
@@ -262,6 +263,9 @@ public class ExcelDataSeeder implements CommandLineRunner {
         // Price Cleanup: Remove commas (e.g., "4,500,000" -> "4500000")
         String priceStr = getCellValueAsString(row.getCell(4)).replaceAll(",", "").trim();
         BigDecimal price = priceStr.isEmpty() ? BigDecimal.ZERO : new BigDecimal(priceStr);
+
+        String stockQtyStr = getCellValueAsString(row.getCell(5)).replaceAll(",", "").trim();
+        int stockQuantity = stockQtyStr.isEmpty() ? 0 : (int) Double.parseDouble(stockQtyStr);
 
         String imageFileName = getCellValueAsString(row.getCell(6));
         String jsonAttr = getCellValueAsString(row.getCell(7));
@@ -303,7 +307,7 @@ public class ExcelDataSeeder implements CommandLineRunner {
                     .product(product)
                     .sku(sku)
                     .price(price)
-                    .stockQuantity(10) // Default initial stock
+                    .stockQuantity(stockQuantity)
                     .imageUrl(imageUrl)
                     .attributes(attributes)
                     .build();

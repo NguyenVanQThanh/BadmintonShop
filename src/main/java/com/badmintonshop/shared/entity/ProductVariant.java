@@ -1,10 +1,15 @@
 package com.badmintonshop.shared.entity;
 
+import com.badmintonshop.shared.entity.enums.CommonStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
+
+import java.time.LocalDateTime;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
@@ -96,6 +101,18 @@ public class ProductVariant {
     @Column(columnDefinition = "jsonb", nullable = false)
     @Builder.Default
     private Map<String, Object> attributes = new HashMap<>();
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private CommonStatus status = CommonStatus.ACTIVE;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 
     /**
      * The parent generic product definition.

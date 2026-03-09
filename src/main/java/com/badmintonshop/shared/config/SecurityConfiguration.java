@@ -3,6 +3,8 @@ package com.badmintonshop.shared.config;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -59,9 +61,9 @@ public class SecurityConfiguration {
             
             // 3. Authorization Rules: Define which endpoints are public and which are protected.
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/account/auth/**").permitAll() // Allow unauthenticated access to Login/Register
+                .requestMatchers("/api/admin/auth/**").permitAll() // Allow unauthenticated access to Login
                 .requestMatchers("/api/admin/accounts/**").hasRole("ADMIN")
-                .requestMatchers("/api/account/**").hasAnyRole("ADMIN", "CASHIER")
+                .requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "CASHIER")
                 .anyRequest().authenticated() // Require authentication for all other endpoints
             )
             
@@ -86,6 +88,23 @@ public class SecurityConfiguration {
             );
 
         return http.build();
+    }
+
+    // ========================================================================
+    // ROLE HIERARCHY
+    // ========================================================================
+
+    /**
+     * Defines the role hierarchy for the application.
+     * <p>
+     * ADMIN inherits all permissions of CASHIER, so any endpoint secured with
+     * {@code hasRole("CASHIER")} or {@code @PreAuthorize("hasRole('CASHIER')")}
+     * will automatically allow ADMIN users as well.
+     * </p>
+     */
+    @Bean
+    public RoleHierarchy roleHierarchy() {
+        return RoleHierarchyImpl.fromHierarchy("ROLE_ADMIN > ROLE_CASHIER");
     }
 
     // ========================================================================
